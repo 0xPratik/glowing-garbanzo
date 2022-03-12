@@ -35,27 +35,6 @@ pub mod escrow_mod {
 
     pub fn claim_bounty(ctx: Context<ClaimBounty>) -> Result<()> {
         msg!("SHIT ITS WORKING");
-        // let ix = system_instruction::transfer(
-        //     &ctx.accounts.bounty_account.to_account_info().key(),
-        //     &ctx.accounts.reciever_account.to_account_info().key(),
-        //     ctx.accounts.bounty_account.amount,
-        // );
-
-        // let seeds = &[
-        //     b"bounty",
-        //     ctx.accounts.authority.to_account_info().key.as_ref(),
-        //     &[ctx.accounts.bounty_account.bump],
-        // ];
-        // let pda_signer = &[&seeds[..]];
-        // invoke_signed(
-        //     &ix,
-        //     &[
-        //         ctx.accounts.bounty_account.to_account_info(),
-        //         ctx.accounts.reciever_account.to_account_info(),
-        //         ctx.accounts.system_program.to_account_info(),
-        //     ],
-        //     pda_signer,
-        // )?;
         **ctx
             .accounts
             .bounty_account
@@ -78,6 +57,8 @@ pub mod escrow_mod {
             .lamports()
             .checked_add(ctx.accounts.bounty_account.amount)
             .ok_or(ProgramError::InvalidArgument)?;
+        let bounty_account = &mut ctx.accounts.bounty_account;
+        bounty_account.is_claimed = true;
         Ok(())
     }
 }
