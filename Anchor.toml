@@ -1,7 +1,7 @@
 [features]
 seeds = false
 [programs.localnet]
-escrow_mod = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
+escrow_mod = "EtxmAK5Hio4p1NQEwrRJu6UJpheKpBf1cfg9U7x3gGEX"
 
 [registry]
 url = "https://anchor.projectserum.com"

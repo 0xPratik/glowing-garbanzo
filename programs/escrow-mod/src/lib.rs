@@ -1,8 +1,8 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::program::invoke_signed;
+use anchor_lang::solana_program::program::{invoke, invoke_signed};
 use anchor_lang::solana_program::system_instruction;
 
-declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
+declare_id!("EtxmAK5Hio4p1NQEwrRJu6UJpheKpBf1cfg9U7x3gGEX");
 
 #[program]
 pub mod escrow_mod {
@@ -21,14 +21,23 @@ pub mod escrow_mod {
             amount,
         );
 
-        invoke_signed(
+        // invoke_signed(
+        //     &ix,
+        //     &[
+        //         ctx.accounts.authority.to_account_info(),
+        //         sender.to_account_info(),
+        //         ctx.accounts.system_program.to_account_info(),
+        //     ],
+        //     &[&[b"bounty", &[bounty_account.bump]]],
+        // )?;
+
+        invoke(
             &ix,
             &[
                 ctx.accounts.authority.to_account_info(),
                 sender.to_account_info(),
                 ctx.accounts.system_program.to_account_info(),
             ],
-            &[&[b"bounty", &[bounty_account.bump]]],
         )?;
         Ok(())
     }
@@ -41,7 +50,6 @@ pub struct LockSOL<'info> {
     #[account(init,payer=authority,seeds=[b"bounty",authority.key().as_ref()],bump)]
     pub bounty_account: Account<'info, BountyAccount>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
 }
 
 #[account]
