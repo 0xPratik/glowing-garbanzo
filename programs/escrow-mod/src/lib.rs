@@ -21,16 +21,6 @@ pub mod escrow_mod {
             amount,
         );
 
-        // invoke_signed(
-        //     &ix,
-        //     &[
-        //         ctx.accounts.authority.to_account_info(),
-        //         sender.to_account_info(),
-        //         ctx.accounts.system_program.to_account_info(),
-        //     ],
-        //     &[&[b"bounty", &[bounty_account.bump]]],
-        // )?;
-
         invoke(
             &ix,
             &[
@@ -41,14 +31,51 @@ pub mod escrow_mod {
         )?;
         Ok(())
     }
+
+    pub fn claim_bounty(ctx: Context<ClaimBounty>) -> Result<()> {
+        msg!("INF THE RPIOG");
+        let ix = system_instruction::transfer(
+            &ctx.accounts.bounty_account.to_account_info().key(),
+            &ctx.accounts.reciever_account.to_account_info().key(),
+            ctx.accounts.bounty_account.amount,
+        );
+
+        let seeds = &[
+            b"bounty",
+            ctx.accounts.authority.to_account_info().key.as_ref(),
+            &[ctx.accounts.bounty_account.bump],
+        ];
+        let pda_signer = &[&seeds[..]];
+        invoke_signed(
+            &ix,
+            &[
+                ctx.accounts.bounty_account.to_account_info(),
+                ctx.accounts.reciever_account.to_account_info(),
+                ctx.accounts.system_program.to_account_info(),
+            ],
+            pda_signer,
+        )?;
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
 pub struct LockSOL<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
-    #[account(init,payer=authority,seeds=[b"bounty",authority.key().as_ref()],bump)]
+    #[account(init,payer=authority,seeds=[b"bounty".as_ref(),authority.key().as_ref()],bump)]
     pub bounty_account: Account<'info, BountyAccount>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+pub struct ClaimBounty<'info> {
+    #[account(mut)]
+    pub authority: Signer<'info>,
+    #[account(mut,seeds=[b"bounty",authority.key().as_ref()],bump=bounty_account.bump)]
+    pub bounty_account: Account<'info, BountyAccount>,
+    #[account(mut)]
+    pub reciever_account: SystemAccount<'info>,
     pub system_program: Program<'info, System>,
 }
 

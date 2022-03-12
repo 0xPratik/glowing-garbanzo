@@ -25,4 +25,26 @@ describe("escrow-mod", () => {
     });
     console.log("Your transaction signature", tx);
   });
+  it("Should read the Data of Bounty Account",async() =>{
+    const data = await program.account.bountyAccount.all();
+    console.log("Bounty Account Data",data);
+  })
+  it("Should be able to Claim the Bounty",async() => {
+    const [bounty, _nonce] = await anchor.web3.PublicKey.findProgramAddress(
+      [Buffer.from(anchor.utils.bytes.utf8.encode("bounty")),program.provider.wallet.publicKey.toBuffer()],
+      program.programId
+    );
+    const re = anchor.web3.Keypair.generate()
+    console.log("RE",re.publicKey.toString());
+    const tx = await program.rpc.claimBounty({
+      accounts:{
+        authority: program.provider.wallet.publicKey,
+        bountyAccount:bounty,
+        recieverAccount: re.publicKey,
+        systemProgram:anchor.web3.SystemProgram.programId
+      }
+    })
+
+    console.log("TX Done",tx);
+  })
 });
