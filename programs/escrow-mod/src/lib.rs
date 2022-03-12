@@ -11,6 +11,7 @@ pub mod escrow_mod {
     pub fn lock_sol(ctx: Context<LockSOL>, amount: u64) -> Result<()> {
         let sender = &ctx.accounts.bounty_account.clone();
         let bounty_account = &mut ctx.accounts.bounty_account;
+        bounty_account.authority = ctx.accounts.authority.to_account_info().key();
         bounty_account.is_claimed = false;
         bounty_account.bump = *ctx.bumps.get("bounty_account").unwrap();
         bounty_account.amount = amount;
@@ -33,28 +34,50 @@ pub mod escrow_mod {
     }
 
     pub fn claim_bounty(ctx: Context<ClaimBounty>) -> Result<()> {
-        msg!("INF THE RPIOG");
-        let ix = system_instruction::transfer(
-            &ctx.accounts.bounty_account.to_account_info().key(),
-            &ctx.accounts.reciever_account.to_account_info().key(),
-            ctx.accounts.bounty_account.amount,
-        );
+        msg!("SHIT ITS WORKING");
+        // let ix = system_instruction::transfer(
+        //     &ctx.accounts.bounty_account.to_account_info().key(),
+        //     &ctx.accounts.reciever_account.to_account_info().key(),
+        //     ctx.accounts.bounty_account.amount,
+        // );
 
-        let seeds = &[
-            b"bounty",
-            ctx.accounts.authority.to_account_info().key.as_ref(),
-            &[ctx.accounts.bounty_account.bump],
-        ];
-        let pda_signer = &[&seeds[..]];
-        invoke_signed(
-            &ix,
-            &[
-                ctx.accounts.bounty_account.to_account_info(),
-                ctx.accounts.reciever_account.to_account_info(),
-                ctx.accounts.system_program.to_account_info(),
-            ],
-            pda_signer,
-        )?;
+        // let seeds = &[
+        //     b"bounty",
+        //     ctx.accounts.authority.to_account_info().key.as_ref(),
+        //     &[ctx.accounts.bounty_account.bump],
+        // ];
+        // let pda_signer = &[&seeds[..]];
+        // invoke_signed(
+        //     &ix,
+        //     &[
+        //         ctx.accounts.bounty_account.to_account_info(),
+        //         ctx.accounts.reciever_account.to_account_info(),
+        //         ctx.accounts.system_program.to_account_info(),
+        //     ],
+        //     pda_signer,
+        // )?;
+        **ctx
+            .accounts
+            .bounty_account
+            .to_account_info()
+            .try_borrow_mut_lamports()? = ctx
+            .accounts
+            .bounty_account
+            .to_account_info()
+            .lamports()
+            .checked_sub(ctx.accounts.bounty_account.amount)
+            .ok_or(ProgramError::InvalidArgument)?;
+        **ctx
+            .accounts
+            .reciever_account
+            .to_account_info()
+            .try_borrow_mut_lamports()? = ctx
+            .accounts
+            .reciever_account
+            .to_account_info()
+            .lamports()
+            .checked_add(ctx.accounts.bounty_account.amount)
+            .ok_or(ProgramError::InvalidArgument)?;
         Ok(())
     }
 }
@@ -72,7 +95,7 @@ pub struct LockSOL<'info> {
 pub struct ClaimBounty<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
-    #[account(mut,seeds=[b"bounty",authority.key().as_ref()],bump=bounty_account.bump)]
+    #[account(mut,seeds=[b"bounty",authority.key().as_ref()],bump=bounty_account.bump,has_one=authority)]
     pub bounty_account: Account<'info, BountyAccount>,
     #[account(mut)]
     pub reciever_account: SystemAccount<'info>,

@@ -42,7 +42,7 @@ describe("escrow-mod", () => {
         bountyAccount:bounty,
         recieverAccount: re.publicKey,
         systemProgram:anchor.web3.SystemProgram.programId
-      }
+      },
     })
 
     console.log("TX Done",tx);
