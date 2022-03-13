@@ -1,6 +1,7 @@
 use anchor_lang::prelude::*;
-use anchor_lang::solana_program::program::{invoke, invoke_signed};
+use anchor_lang::solana_program::program::invoke;
 use anchor_lang::solana_program::system_instruction;
+// use anchor_spl::token::{self, SetAuthority, Token, TokenAccount, Transfer};
 
 declare_id!("EtxmAK5Hio4p1NQEwrRJu6UJpheKpBf1cfg9U7x3gGEX");
 
@@ -12,10 +13,8 @@ pub mod escrow_mod {
         let sender = &ctx.accounts.bounty_account.clone();
         let bounty_account = &mut ctx.accounts.bounty_account;
         bounty_account.authority = ctx.accounts.authority.to_account_info().key();
-        bounty_account.is_claimed = false;
         bounty_account.bump = *ctx.bumps.get("bounty_account").unwrap();
         bounty_account.amount = amount;
-        bounty_account.is_active = true;
         let ix = system_instruction::transfer(
             ctx.accounts.authority.key,
             &sender.to_account_info().key(),
@@ -32,6 +31,10 @@ pub mod escrow_mod {
         )?;
         Ok(())
     }
+
+    // pub fn Lock_spl(ctx: Context<LockSPL>) -> Result<()> {
+    //     Ok(())
+    // }
 
     pub fn claim_bounty(ctx: Context<ClaimBounty>) -> Result<()> {
         msg!("SHIT ITS WORKING");
@@ -57,8 +60,6 @@ pub mod escrow_mod {
             .lamports()
             .checked_add(ctx.accounts.bounty_account.amount)
             .ok_or(ProgramError::InvalidArgument)?;
-        let bounty_account = &mut ctx.accounts.bounty_account;
-        bounty_account.is_claimed = true;
         Ok(())
     }
 }
@@ -71,6 +72,12 @@ pub struct LockSOL<'info> {
     pub bounty_account: Account<'info, BountyAccount>,
     pub system_program: Program<'info, System>,
 }
+
+// #[derive(Accounts)]
+// pub struct LockSPL<'info> {
+//     pub system_program: Program<'info, System>,
+//     pub token_program: Program<'info, Token>,
+// }
 
 #[derive(Accounts)]
 pub struct ClaimBounty<'info> {
@@ -88,7 +95,5 @@ pub struct ClaimBounty<'info> {
 pub struct BountyAccount {
     pub authority: Pubkey,
     pub amount: u64,
-    pub is_claimed: bool,
-    pub is_active: bool,
     pub bump: u8,
 }
