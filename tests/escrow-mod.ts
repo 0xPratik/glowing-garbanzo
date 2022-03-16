@@ -122,6 +122,11 @@ describe("escrow-mod", () => {
       program.programId
     );
 
+    const [bounty, _nonce] = await anchor.web3.PublicKey.findProgramAddress(
+      [Buffer.from(anchor.utils.bytes.utf8.encode("splbounty")),program.provider.wallet.publicKey.toBuffer()],
+      program.programId
+    );
+
     console.log("VAULT ACCOUNT",vault.toString());
 
     const ptx = await program.rpc.lockSpl(new anchor.BN(10000000000),{accounts:{
@@ -131,21 +136,23 @@ describe("escrow-mod", () => {
       systemProgram:anchor.web3.SystemProgram.programId,
       tokenProgram: TOKEN_PROGRAM_ID,
       vaultAccount:vault,
-      rent: anchor.web3.SYSVAR_RENT_PUBKEY
+      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      bountyAccount:bounty
     }})
 
     console.log("FINAL TX",ptx);
 
     console.log("WINNER ACCOUNT",winner_ata.toString());
 
-    const withdraw = await program.rpc.unlockSpl(new anchor.BN(1000000000),vault_bump,{
+    const withdraw = await program.rpc.unlockSpl({
       accounts:{
         authority: program.provider.wallet.publicKey,
         mint:mint.publicKey,
         systemProgram:anchor.web3.SystemProgram.programId,
         tokenProgram: TOKEN_PROGRAM_ID,
         vaultAccount:vault,
-        winnerTokenAccount:winner_ata
+        winnerTokenAccount:winner_ata,
+        bountyAccount:bounty
       }
     })
 

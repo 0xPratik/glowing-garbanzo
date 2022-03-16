@@ -34,6 +34,11 @@ pub mod escrow_mod {
     }
 
     pub fn lock_spl(ctx: Context<LockSPL>, amount: u64) -> Result<()> {
+        let bounty_account = &mut ctx.accounts.bounty_account;
+        bounty_account.authority = ctx.accounts.authority.to_account_info().key();
+        bounty_account.bump = *ctx.bumps.get("bounty_account").unwrap();
+        bounty_account.vault_bump = *ctx.bumps.get("vault_account").unwrap();
+        bounty_account.amount = amount;
         anchor_spl::token::transfer(
             CpiContext::new(
                 ctx.accounts.token_program.to_account_info(),
@@ -60,7 +65,7 @@ pub mod escrow_mod {
         Ok(())
     }
 
-    pub fn unlock_spl(ctx: Context<UnLockSPL>, amount: u64, bump: u8) -> Result<()> {
+    pub fn unlock_spl(ctx: Context<UnLockSPL>) -> Result<()> {
         anchor_spl::token::transfer(
             CpiContext::new_with_signer(
                 ctx.accounts.token_program.to_account_info(),
@@ -69,9 +74,13 @@ pub mod escrow_mod {
                     to: ctx.accounts.winner_token_account.to_account_info(),
                     authority: ctx.accounts.authority.to_account_info(),
                 },
-                &[&[b"vault", ctx.accounts.authority.key().as_ref(), &[bump]]],
+                &[&[
+                    b"vault",
+                    ctx.accounts.authority.key().as_ref(),
+                    &[ctx.accounts.bounty_account.vault_bump],
+                ]],
             ),
-            amount,
+            ctx.accounts.bounty_account.amount,
         )?;
         Ok(())
     }
@@ -119,6 +128,8 @@ pub struct LockSPL<'info> {
     pub authority: Signer<'info>,
     #[account(init_if_needed, payer = authority,seeds=[b"vault",authority.key().as_ref()],bump,token::mint=mint,token::authority=authority)]
     pub vault_account: Account<'info, TokenAccount>,
+    #[account(init,payer=authority,seeds=[b"splbounty".as_ref(),authority.key().as_ref()],bump)]
+    pub bounty_account: Account<'info, BountyAccount>,
     #[account(mut)]
     pub authority_token_account: Account<'info, TokenAccount>,
     pub mint: Account<'info, Mint>,
@@ -131,8 +142,10 @@ pub struct LockSPL<'info> {
 pub struct UnLockSPL<'info> {
     #[account(mut)]
     pub authority: Signer<'info>,
-    #[account(mut,seeds=[b"vault",authority.key().as_ref()],bump)]
+    #[account(mut,seeds=[b"vault",authority.key().as_ref()],bump=bounty_account.vault_bump)]
     pub vault_account: Account<'info, TokenAccount>,
+    #[account(mut,seeds=[b"splbounty",authority.key().as_ref()],bump=bounty_account.bump,has_one=authority)]
+    pub bounty_account: Account<'info, BountyAccount>,
     #[account(mut)]
     pub winner_token_account: Account<'info, TokenAccount>,
     pub mint: Account<'info, Mint>,
@@ -157,6 +170,7 @@ pub struct BountyAccount {
     pub authority: Pubkey,
     pub amount: u64,
     pub bump: u8,
+    pub vault_bump: u8,
 }
 
 #[account]
